@@ -142,6 +142,13 @@
   .script-block .voiceover{white-space:pre-wrap;font-size:13.5px;line-height:1.9;margin:6px 0 10px}
   .loading-inline{display:flex;align-items:center;gap:10px;color:var(--text2);font-size:13px;padding:20px 0;justify-content:center}
   .loading-inline .ico{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--red);animation:spin 1s linear infinite}
+  .script-block.flash{animation:flashbg 1.8s ease}
+  @keyframes flashbg{0%{background:var(--red-soft)}100%{background:transparent}}
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:99;max-width:90vw}
+  #toast.show{opacity:.95}
+  .script-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .script-nav button{border:1px solid var(--border);background:var(--tab-bg);color:var(--text2);border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer}
+  .script-nav button:hover{border-color:var(--red);color:var(--red)}
   footer{text-align:center;font-size:12px;color:var(--text2);margin-top:30px}
 </style>
 </head>
@@ -244,6 +251,7 @@
 
   <footer>本工具不存储任何数据 · API Key 与文稿缓存仅保存在本机浏览器 · 分析结果由 AI 生成，仅供创作参考 · 二次创作请做原创化改编</footer>
 </div>
+<div id="toast"></div>
 
 <script>
 "use strict";
@@ -360,7 +368,7 @@ const P_TRANSCRIBE = `请转写这条视频的完整口播文稿。要求：
 1. 只转写说话内容（口播、旁白、对话），逐字转写，不要总结、不要缩写、不要遗漏。
 2. 完全忽略画面，不要描述画面内容。
 3. 说什么语言就用什么语言转写，不要翻译。
-4. 按自然段落分段，每段开头标注大致时间戳，格式如 [02:15]。
+4. 按自然段落分段，段落之间空一行。不要添加时间戳、行号或任何标记。
 5. 不要添加任何转写内容之外的说明文字。
 6. 如果整条视频没有任何说话内容，只输出：NO_SPEECH`;
 
@@ -570,13 +578,17 @@ async function analyze(){
     renderAll();
     setStep(3, skipped);
 
-    /* 第4步：为推荐选题生成脚本 */
-    const rec = state.topics.topics && state.topics.topics[state.topics.recommendedIndex || 0];
+    /* 第4步：为推荐选题（⭐）自动生成脚本 */
+    const recIdx = state.topics.recommendedIndex || 0;
+    const rec = state.topics.topics && state.topics.topics[recIdx];
     if(rec){
       const script = await callGeminiJson([{ text: pScript(rec, state.logic, transcript, store.niche) }], { temperature: 0.8 });
       script._topicTitle = rec.title;
+      script._topicIndex = recIdx;
+      script._auto = true;
       state.scripts.push(script);
       renderAll();
+      toast("✅ 已为推荐选题生成完整脚本，见「复刻脚本」页");
     }
     setStep(4, skipped);
   }catch(e){
@@ -593,18 +605,55 @@ $("videoUrl").addEventListener("keydown", e => { if(e.key==="Enter") analyze(); 
 /* ---------- 为指定选题生成脚本（选题卡片按钮） ---------- */
 async function genScriptFor(idx, btn){
   const topic = state.topics.topics[idx];
-  btn.disabled = true; btn.textContent = "生成中…（约1-2分钟）";
+  const oldText = btn.textContent;
+  btn.disabled = true; btn.textContent = "⏳ 生成中…（约1-2分钟，完成后自动跳转）";
   try{
     const script = await callGeminiJson([{ text: pScript(topic, state.logic, state.transcript, store.niche) }], { temperature: 0.8 });
     script._topicTitle = topic.title;
-    state.scripts.push(script);
+    script._topicIndex = idx;
+    const exist = state.scripts.findIndex(s=>s._topicIndex===idx);
+    let pos;
+    if(exist>=0){ script._auto = state.scripts[exist]._auto; state.scripts[exist] = script; pos = exist; }
+    else{ state.scripts.push(script); pos = state.scripts.length-1; }
     renderAll();
-    document.querySelector('.tab[data-tab="script"]').click();
+    viewScript(pos);
+    toast("✅ 脚本已生成");
   }catch(e){
-    alert("脚本生成失败：" + netFriendly(e));
-  }finally{
-    btn.disabled = false; btn.textContent = "✍️ 为此选题生成完整脚本";
+    toast("❌ 脚本生成失败：" + netFriendly(e));
+    btn.disabled = false; btn.textContent = oldText;
   }
+}
+
+/* ---------- 跳转并高亮某篇脚本 ---------- */
+function viewScript(i){
+  const tabEl = document.querySelector('.tab[data-tab="script"]');
+  if(tabEl) tabEl.click();
+  const blk = $("script-block-"+i);
+  if(blk){
+    blk.scrollIntoView({behavior:"smooth", block:"start"});
+    blk.classList.remove("flash"); void blk.offsetWidth; blk.classList.add("flash");
+  }
+}
+
+/* ---------- 提示气泡 ---------- */
+let toastTimer = null;
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove("show"), 3200);
+}
+
+/* ---------- 单篇脚本转纯文本（复制用） ---------- */
+function scriptToText(s){
+  const L = [ s.title || s._topicTitle || "" ];
+  if((s.titleOptions||[]).length) L.push("备选标题：" + s.titleOptions.join(" ／ "));
+  if(s.estimatedDuration) L.push("预计时长：" + s.estimatedDuration);
+  if(s.hook) L.push("", "【开场钩子】", s.hook);
+  (s.sections||[]).forEach(x=>{ L.push("", "【"+(x.name||"")+"】", x.voiceover||""); });
+  if(s.cta) L.push("", "【结尾 CTA】", s.cta);
+  if(s.notes) L.push("", "备注：" + s.notes);
+  return L.join("\n");
 }
 
 /* ---------- 渲染 ---------- */
@@ -623,7 +672,7 @@ function renderAll(){
   if(d.structure && d.structure.length) tabs.push(["structure","🧩 文案拆解", renderStructure(d.structure)]);
   if(d.viralLogic) tabs.push(["logic","🔥 爆款逻辑", renderLogic(d.viralLogic)]);
   tabs.push(["topics","💡 深度选题", state.topics ? renderTopics(state.topics) : loadingHtml("正在基于爆款逻辑生成深度选题…")]);
-  tabs.push(["script","✍️ 复刻脚本", state.scripts.length ? renderScripts(state.scripts) : loadingHtml("将为推荐选题自动生成完整口播脚本…（也可在选题页手动选择）")]);
+  tabs.push(["script","✍️ 复刻脚本"+(state.scripts.length?"("+state.scripts.length+")":""), state.scripts.length ? renderScripts(state.scripts) : loadingHtml("将为 ⭐推荐选题 自动生成完整口播脚本…（也可在「深度选题」页为任意选题手动生成）")]);
   if(d.goldenLines && d.goldenLines.length) tabs.push(["golden","💬 金句钩子库", renderGolden(d.goldenLines)]);
   if(state.transcript) tabs.push(["transcript","📃 完整文稿", '<div class="transcript">'+esc(state.transcript)+'</div>']);
 
@@ -642,6 +691,16 @@ function renderAll(){
   });
   document.querySelectorAll("[data-genscript]").forEach(b=>{
     b.onclick = ()=>genScriptFor(parseInt(b.dataset.genscript,10), b);
+  });
+  document.querySelectorAll("[data-viewscript]").forEach(b=>{
+    b.onclick = ()=>viewScript(parseInt(b.dataset.viewscript,10));
+  });
+  document.querySelectorAll("[data-copyscript]").forEach(b=>{
+    b.onclick = async ()=>{
+      const s = state.scripts[parseInt(b.dataset.copyscript,10)];
+      try{ await navigator.clipboard.writeText(scriptToText(s)); toast("📋 已复制脚本全文，可直接粘贴使用"); }
+      catch(e){ toast("复制失败，请手动选中文本复制"); }
+    };
   });
   $("result").style.display="block";
 }
@@ -704,7 +763,7 @@ function renderTopics(t){
         tItem("可传播原因",x.whyViral)+
         (x.titleOptions&&x.titleOptions.length?tItem("备选标题",x.titleOptions.join(" ／ ")):"")+
       '</div>'+
-      '<div class="topic-foot"><button class="btn ghost small" data-genscript="'+i+'">✍️ 为此选题生成完整脚本</button>'+
+      '<div class="topic-foot">'+topicButtons(i)+
       (isRec&&t.recommendReason?'<span class="gen-status">推荐理由：'+esc(t.recommendReason)+'</span>':"")+'</div>'+
     '</div>';
   }).join("");
@@ -712,11 +771,25 @@ function renderTopics(t){
 }
 const tItem = (k,v) => v ? '<div class="item"><span class="k">'+esc(k)+'</span><span style="flex:1">'+esc(v)+'</span></div>' : "";
 
+function topicButtons(i){
+  const sIdx = state.scripts.findIndex(s=>s._topicIndex===i);
+  if(sIdx>=0)
+    return '<button class="btn small" data-viewscript="'+sIdx+'">📖 查看已生成的脚本</button>'+
+           '<button class="btn ghost small" data-genscript="'+i+'">🔄 重新生成</button>';
+  return '<button class="btn ghost small" data-genscript="'+i+'">✍️ 为此选题生成完整脚本</button>';
+}
+
 function renderScripts(list){
-  return list.map((s,i)=>
-    '<div class="script-block">'+
-    '<div class="seg-head"><span class="tag blue">脚本 '+(i+1)+'</span><b>'+esc(s.title||s._topicTitle||"")+'</b>'+
-    (s.estimatedDuration?'<span class="tag" style="background:var(--tab-bg);color:var(--text2)">'+esc(s.estimatedDuration)+'</span>':"")+'</div>'+
+  let nav = "";
+  if(list.length>1)
+    nav = '<div class="script-nav">'+list.map((s,i)=>'<button data-viewscript="'+i+'">'+(i+1)+'. '+esc(String(s.title||s._topicTitle||"").slice(0,22))+(s._auto?" ⭐":"")+'</button>').join("")+'</div>';
+  return nav + list.map((s,i)=>
+    '<div class="script-block" id="script-block-'+i+'">'+
+    '<div class="seg-head"><span class="tag blue">脚本 '+(i+1)+'</span>'+
+    (s._auto?'<span class="tag">⭐ 推荐选题·自动生成</span>':"")+
+    '<b>'+esc(s.title||s._topicTitle||"")+'</b>'+
+    (s.estimatedDuration?'<span class="tag" style="background:var(--tab-bg);color:var(--text2)">'+esc(s.estimatedDuration)+'</span>':"")+
+    '<span class="spacer"></span><button class="icon-btn" data-copyscript="'+i+'" style="padding:5px 10px;font-size:12px">📋 复制全文</button></div>'+
     (s.titleOptions&&s.titleOptions.length?'<div class="hint" style="margin-bottom:8px">备选标题：'+esc(s.titleOptions.join(" ／ "))+'</div>':"")+
     (s.hook?'<div class="section-title">开场钩子</div><div class="voiceover">'+esc(s.hook)+'</div>':"")+
     (s.sections||[]).map(x=>
