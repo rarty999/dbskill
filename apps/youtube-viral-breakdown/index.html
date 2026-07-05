@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube 爆款视频拆解助手</title>
+<style>
+  :root{
+    --red:#e02424; --red-dark:#c81e1e; --red-soft:#fde8e8;
+    --bg:#f6f7f9; --card:#ffffff; --text:#1a202c; --text2:#5a6472;
+    --border:#e4e7ec; --input-bg:#ffffff; --tab-bg:#eef0f3;
+    --ok:#0e9f6e; --warn:#c27803;
+    --shadow:0 1px 3px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.04);
+  }
+  html[data-theme="dark"]{
+    --red:#f05252; --red-dark:#e02424; --red-soft:#3b1a1a;
+    --bg:#111418; --card:#1b2027; --text:#e8eaee; --text2:#9aa4b2;
+    --border:#2c333d; --input-bg:#12161b; --tab-bg:#242a33;
+    --shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.65;font-size:14px}
+  .wrap{max-width:960px;margin:0 auto;padding:20px 16px 60px}
+
+  /* header */
+  header{display:flex;align-items:center;gap:10px;padding:6px 0 18px}
+  .logo{width:34px;height:34px;border-radius:8px;background:var(--red);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .logo svg{width:20px;height:20px;fill:#fff}
+  header h1{font-size:18px;font-weight:700}
+  header .sub{font-size:12px;color:var(--text2)}
+  .spacer{flex:1}
+  .icon-btn{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+  .icon-btn:hover{border-color:var(--red)}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:18px;margin-bottom:14px}
+  .card h2{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .card h2 .dot{width:6px;height:6px;border-radius:50%;background:var(--red)}
+
+  label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px}
+  input[type=text],input[type=password],select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-size:14px;outline:none}
+  input:focus,select:focus{border-color:var(--red)}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:220px}
+
+  .btn{background:var(--red);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s}
+  .btn:hover{background:var(--red-dark)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:transparent;color:var(--red);border:1px solid var(--red)}
+  .btn.small{padding:8px 14px;font-size:13px}
+
+  .hint{font-size:12px;color:var(--text2);margin-top:6px}
+  .hint a{color:var(--red)}
+  .key-status{font-size:12px;margin-top:6px}
+  .key-status.ok{color:var(--ok)} .key-status.err{color:var(--red)}
+
+  /* toggles */
+  .toggles{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+  .toggle{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:8px;padding:9px 12px;cursor:pointer;user-select:none}
+  .toggle span{font-size:13px}
+  .switch{width:36px;height:20px;border-radius:10px;background:var(--border);position:relative;transition:background .15s;flex-shrink:0}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+  .toggle.on .switch{background:var(--red)}
+  .toggle.on .switch::after{left:18px}
+
+  /* progress */
+  #progress{display:none}
+  .steps{display:flex;flex-direction:column;gap:10px}
+  .step{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)}
+  .step .ico{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .step.active{color:var(--text)}
+  .step.active .ico{border-color:var(--red);border-top-color:transparent;animation:spin 1s linear infinite}
+  .step.done .ico{border-color:var(--ok);background:var(--ok)}
+  .step.done .ico::after{content:"✓";color:#fff;font-size:11px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .progress-note{font-size:12px;color:var(--text2);margin-top:12px}
+
+  /* error */
+  #errorBox{display:none;border-left:3px solid var(--red);background:var(--red-soft);border-radius:8px;padding:12px 14px;font-size:13px;margin-bottom:14px;white-space:pre-wrap}
+
+  /* result */
+  #result{display:none}
+  .result-head{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .result-head .title{flex:1;min-width:200px}
+  .result-head .title b{font-size:15px}
+  .result-head .title .url{font-size:12px;color:var(--text2);word-break:break-all}
+  .export-btns{display:flex;gap:8px}
+
+  .tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px;-webkit-overflow-scrolling:touch}
+  .tab{white-space:nowrap;border:1px solid var(--border);background:var(--tab-bg);color:var(--text2);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer}
+  .tab.active{background:var(--red);border-color:var(--red);color:#fff;font-weight:600}
+
+  .panel{display:none}
+  .panel.active{display:block}
+
+  .seg{border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px}
+  .seg-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .time-badge{background:var(--red-soft);color:var(--red);font-weight:700;font-size:12px;border-radius:6px;padding:2px 8px}
+  .seg-head b{font-size:14px}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}
+  @media(max-width:640px){.kv{grid-template-columns:1fr}}
+  .kv .item{display:flex;gap:8px;font-size:13px}
+  .kv .k{color:var(--text2);flex-shrink:0;min-width:60px}
+  .kv .v{flex:1}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
+  .mini-card{border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .mini-card b{display:block;margin-bottom:4px;font-size:13px}
+  .mini-card p{font-size:13px;color:var(--text2)}
+  .mini-card .tag{display:inline-block;background:var(--red-soft);color:var(--red);font-size:11px;border-radius:5px;padding:1px 7px;margin-bottom:6px}
+
+  .score-row{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .score-num{font-size:34px;font-weight:800;color:var(--red)}
+  .score-num small{font-size:14px;color:var(--text2);font-weight:400}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--tab-bg);font-weight:600;white-space:nowrap}
+  .table-scroll{overflow-x:auto}
+
+  ul.plain{list-style:none}
+  ul.plain li{padding:6px 0;border-bottom:1px dashed var(--border);font-size:13px}
+  ul.plain li:last-child{border-bottom:none}
+
+  .section-title{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--red)}
+  .prose{font-size:13.5px;white-space:pre-wrap}
+  footer{text-align:center;font-size:12px;color:var(--text2);margin-top:30px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M10 15.5v-7l6 3.5-6 3.5zM21.6 7.2c-.2-.9-.9-1.6-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4c-.9.2-1.6.9-1.8 1.8C2 8.8 2 12 2 12s0 3.2.4 4.8c.2.9.9 1.6 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4c.9-.2 1.6-.9 1.8-1.8.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8z"/></svg></div>
+    <div>
+      <h1>YouTube 爆款视频拆解助手</h1>
+      <div class="sub">用 Gemini 拆解爆款视频，生成原创复刻方案</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="themeBtn">🌙 深色</button>
+    <button class="icon-btn" id="settingsBtn">⚙️ 设置</button>
+  </header>
+
+  <!-- 设置 -->
+  <div class="card" id="settingsCard">
+    <h2><span class="dot"></span>API 设置（Key 只保存在你自己的浏览器里，不会上传到任何服务器）</h2>
+    <div class="row">
+      <div style="flex:2">
+        <label>Gemini API Key</label>
+        <input type="password" id="apiKey" placeholder="粘贴你的 Gemini API Key（AIza 开头）" autocomplete="off">
+        <div class="hint">还没有 Key？去 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> 免费申请，复制后粘贴到这里。</div>
+        <div class="key-status" id="keyStatus"></div>
+      </div>
+      <div>
+        <label>模型</label>
+        <select id="model">
+          <option value="gemini-2.5-flash">Gemini 2.5 Flash（推荐，快且便宜）</option>
+          <option value="gemini-2.5-pro">Gemini 2.5 Pro（更深入，较慢）</option>
+          <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite（最省额度）</option>
+        </select>
+        <div style="margin-top:10px"><button class="btn ghost small" id="testKeyBtn">测试连接</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 输入 -->
+  <div class="card">
+    <h2><span class="dot"></span>要拆解的视频</h2>
+    <label>YouTube 视频链接（支持普通视频 / Shorts，必须是公开视频）</label>
+    <div class="row" style="align-items:stretch">
+      <div style="flex:3"><input type="text" id="videoUrl" placeholder="https://www.youtube.com/watch?v=... 或 https://youtube.com/shorts/..."></div>
+      <div style="flex:0;min-width:130px"><button class="btn" id="analyzeBtn" style="width:100%;height:100%">开始拆解</button></div>
+    </div>
+
+    <div class="section-title">生成内容（按需开关，开得越少速度越快、越省额度）</div>
+    <div class="toggles" id="toggles">
+      <div class="toggle on" data-key="fullScript"><span>生成完整脚本</span><div class="switch"></div></div>
+      <div class="toggle on" data-key="storyboard"><span>生成分镜表</span><div class="switch"></div></div>
+      <div class="toggle on" data-key="titleCover"><span>生成标题封面方案</span><div class="switch"></div></div>
+      <div class="toggle on" data-key="topicIdeas"><span>生成同题材选题库</span><div class="switch"></div></div>
+    </div>
+    <div class="hint">隐私说明：本页面没有后端，所有请求由你的浏览器直接发给 Google Gemini。请只分析公开视频，复刻请做原创化改编，尊重原作者版权。</div>
+  </div>
+
+  <!-- 进度 -->
+  <div class="card" id="progress">
+    <h2><span class="dot"></span>正在分析</h2>
+    <div class="steps">
+      <div class="step" id="st0"><div class="ico"></div><span>读取视频（Gemini 正在观看画面与声音）</span></div>
+      <div class="step" id="st1"><div class="ico"></div><span>逐段拆解结构与留存技巧</span></div>
+      <div class="step" id="st2"><div class="ico"></div><span>提炼爆款公式与情绪曲线</span></div>
+      <div class="step" id="st3"><div class="ico"></div><span>生成复刻脚本 / 分镜 / 选题</span></div>
+    </div>
+    <div class="progress-note">视频越长耗时越久，Shorts 一般 30 秒～2 分钟，长视频可能需要几分钟，请勿关闭页面。已等待 <span id="elapsed">0</span> 秒</div>
+  </div>
+
+  <div id="errorBox"></div>
+
+  <!-- 结果 -->
+  <div id="result">
+    <div class="card">
+      <div class="result-head">
+        <div class="title">
+          <b id="rTitle">—</b>
+          <div class="url" id="rUrl"></div>
+        </div>
+        <div class="export-btns">
+          <button class="icon-btn" id="exportMd">📄 导出 Markdown</button>
+          <button class="icon-btn" id="exportJson">🧾 导出 JSON</button>
+        </div>
+      </div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div id="panels"></div>
+  </div>
+
+  <footer>本工具不存储任何数据 · API Key 仅保存在本机浏览器 localStorage · 分析结果由 AI 生成，仅供创作参考</footer>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const store = {
+  get k(){ return localStorage.getItem("yvb_key")||"" },
+  set k(v){ localStorage.setItem("yvb_key", v) },
+  get model(){ return localStorage.getItem("yvb_model")||"gemini-2.5-flash" },
+  set model(v){ localStorage.setItem("yvb_model", v) },
+  get theme(){ return localStorage.getItem("yvb_theme")||"light" },
+  set theme(v){ localStorage.setItem("yvb_theme", v) },
+  get toggles(){ try{ return JSON.parse(localStorage.getItem("yvb_toggles"))||{} }catch(e){ return {} } },
+  set toggles(v){ localStorage.setItem("yvb_toggles", JSON.stringify(v)) },
+};
+
+/* ---------- 主题 ---------- */
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  $("themeBtn").textContent = t==="dark" ? "☀️ 浅色" : "🌙 深色";
+}
+applyTheme(store.theme);
+$("themeBtn").onclick = () => { store.theme = store.theme==="dark"?"light":"dark"; applyTheme(store.theme); };
+
+/* ---------- 设置 ---------- */
+$("apiKey").value = store.k;
+$("model").value = store.model;
+$("apiKey").addEventListener("input", e => { store.k = e.target.value.trim(); $("keyStatus").textContent=""; });
+$("model").addEventListener("change", e => store.model = e.target.value);
+$("settingsBtn").onclick = () => { $("settingsCard").scrollIntoView({behavior:"smooth"}); $("apiKey").focus(); };
+
+$("testKeyBtn").onclick = async () => {
+  const key = store.k;
+  const st = $("keyStatus");
+  if(!key){ st.className="key-status err"; st.textContent="请先粘贴 API Key"; return; }
+  st.className="key-status"; st.textContent="正在测试连接…";
+  try{
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1", {headers:{"x-goog-api-key":key}});
+    if(r.ok){ st.className="key-status ok"; st.textContent="✓ 连接成功，Key 有效"; }
+    else{
+      const j = await r.json().catch(()=>({}));
+      st.className="key-status err";
+      st.textContent = "✗ Key 无效或被拒绝（" + (j.error && j.error.message ? j.error.message : ("HTTP "+r.status)) + "）。请检查是否复制完整、有无多余空格。";
+    }
+  }catch(e){ st.className="key-status err"; st.textContent="✗ 网络错误："+e.message+"（请检查网络能否访问 Google 服务）"; }
+};
+
+/* ---------- 开关 ---------- */
+const savedT = store.toggles;
+document.querySelectorAll(".toggle").forEach(t => {
+  const k = t.dataset.key;
+  if(k in savedT) t.classList.toggle("on", !!savedT[k]);
+  t.onclick = () => {
+    t.classList.toggle("on");
+    const all = {};
+    document.querySelectorAll(".toggle").forEach(x => all[x.dataset.key] = x.classList.contains("on"));
+    store.toggles = all;
+  };
+});
+const toggleOn = k => { const el = document.querySelector('.toggle[data-key="'+k+'"]'); return el && el.classList.contains("on"); };
+
+/* ---------- URL 解析 ---------- */
+function normalizeYouTubeUrl(raw){
+  raw = (raw||"").trim();
+  if(!raw) return null;
+  let m;
+  if((m = raw.match(/(?:youtube\.com\/(?:watch\?[^#]*v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{6,20})/)))
+    return "https://www.youtube.com/watch?v=" + m[1];
+  return null;
+}
+
+/* ---------- Prompt ---------- */
+function buildPrompt(opts){
+  const want = [];
+  want.push('"overview"、"timeline"、"viralFormula"、"remake"、"checklist"、"optimization" 为必填');
+  if(opts.fullScript) want.push('"fullScript" 必填');
+  if(opts.storyboard) want.push('"storyboard" 必填');
+  if(opts.titleCover) want.push('"titleCover" 必填');
+  if(opts.topicIdeas) want.push('"topicIdeas" 必填（8 个选题）');
+
+  return `你是一位顶级的 YouTube 增长专家、短视频编导和爆款内容分析师。请完整观看我提供的这条 YouTube 视频（画面、声音、字幕、节奏都要看），然后输出一份深度爆款拆解报告。
+
+要求：
+1. 全程用简体中文输出。
+2. 严格按下方 JSON 结构输出，不要输出 JSON 以外的任何文字。
+3. 拆解必须具体到画面和秒数，禁止空泛套话；"可模仿点"必须是别人照着就能做的动作。
+4. 复刻方案必须是"同结构、不同内容"的原创化改编，不是照抄原视频。
+5. ${want.join("；")}；未要求的字段返回 null。
+
+JSON 结构如下（字段名必须完全一致）：
+{
+  "overview": {
+    "videoTitle": "视频标题（如无法确认则根据内容拟定）",
+    "videoType": "视频类型（如：情感共鸣类 Shorts / 知识口播 / Vlog 等）",
+    "targetAudience": "目标受众画像",
+    "duration": "视频大致时长",
+    "coreTheme": "核心主题一句话",
+    "viralScore": 85,
+    "scoreReason": "打分理由（0-100 分）",
+    "summary": "视频内容 150 字以内概述"
+  },
+  "timeline": [
+    {
+      "timeRange": "00:00-00:03",
+      "title": "本段小标题",
+      "visual": "画面内容描述",
+      "audio": "声音/对白/BGM 描述",
+      "narrativeFunction": "叙事功能（这段在整体结构中起什么作用）",
+      "retentionTechnique": "留存技巧（如何让人不划走）",
+      "editingTechnique": "剪辑手法",
+      "imitationPoint": "可模仿点（具体可执行）"
+    }
+  ],
+  "viralFormula": {
+    "hook": { "analysis": "0-5 秒钩子逐帧分析", "technique": "钩子使用的技巧名称" },
+    "emotionCurve": [ { "stage": "阶段（如 开场）", "emotion": "观众情绪", "trigger": "触发方式" } ],
+    "mechanisms": [ { "name": "爆款机制名称", "explanation": "为什么有效", "howToCopy": "如何复用到自己的视频" } ],
+    "formula": "把这条视频总结成一个可复用的爆款公式，一句话"
+  },
+  "remake": {
+    "strategy": "原创复刻总体策略",
+    "newAngles": [ { "angle": "改编角度", "reason": "为什么这个角度可行" } ],
+    "notes": "复刻时的注意事项（含版权/原创性提醒）"
+  },
+  "fullScript": {
+    "title": "新视频标题",
+    "hook": "开场 0-3 秒钩子台词/画面",
+    "segments": [ { "section": "段落名", "duration": "建议时长", "voiceover": "口播/台词文案", "visualNote": "画面提示" } ],
+    "cta": "结尾引导"
+  },
+  "storyboard": [
+    { "shotNo": 1, "timeRange": "00:00-00:03", "shotType": "景别/运镜", "visual": "画面内容", "dialogueOrVO": "台词/旁白", "subtitle": "字幕文案", "bgmSfx": "BGM/音效建议" }
+  ],
+  "titleCover": {
+    "titles": [ { "title": "候选标题", "logic": "起标题的逻辑" } ],
+    "coverIdeas": [ { "idea": "封面创意描述", "textOnCover": "封面大字", "visualStyle": "视觉风格" } ]
+  },
+  "topicIdeas": [
+    { "title": "选题标题", "hookLogic": "爆点逻辑", "viralReason": "可传播原因" }
+  ],
+  "checklist": [
+    { "phase": "阶段（如 前期准备/拍摄/剪辑/发布）", "items": ["具体事项1", "具体事项2"] }
+  ],
+  "optimization": [
+    { "aspect": "优化维度（如 CTR/完播率/转化）", "suggestion": "具体建议" }
+  ]
+}`;
+}
+
+/* ---------- 调用 Gemini ---------- */
+let timerId = null, elapsedSec = 0;
+function setStep(n){
+  for(let i=0;i<4;i++){
+    const el = $("st"+i);
+    el.classList.toggle("done", i<n);
+    el.classList.toggle("active", i===n);
+  }
+}
+function startProgress(){
+  $("progress").style.display="block"; $("result").style.display="none"; $("errorBox").style.display="none";
+  elapsedSec = 0; $("elapsed").textContent = "0";
+  setStep(0);
+  timerId = setInterval(()=>{
+    elapsedSec++; $("elapsed").textContent = elapsedSec;
+    if(elapsedSec===15) setStep(1);
+    if(elapsedSec===40) setStep(2);
+    if(elapsedSec===75) setStep(3);
+  },1000);
+}
+function stopProgress(){ clearInterval(timerId); $("progress").style.display="none"; }
+
+function friendlyError(status, msg){
+  msg = msg || "";
+  if(/API_KEY_INVALID|API key not valid/i.test(msg)) return "API Key 无效。请回到设置区检查：Key 是否复制完整、前后有无空格，或到 Google AI Studio 重新生成一个。";
+  if(status===429 || /quota|RESOURCE_EXHAUSTED/i.test(msg)) return "API 额度不足或请求太频繁（429）。免费额度有每分钟/每天上限，稍等一两分钟再试，或换用 Flash-Lite 模型。";
+  if(/not found|is not supported/i.test(msg) && /model/i.test(msg)) return "所选模型不可用，请在设置里换一个模型再试。";
+  if(/video|youtube|url/i.test(msg)) return "Gemini 无法读取这条视频：请确认它是公开视频（非私享/会员专属/地区限制），且链接正确。原始错误：" + msg;
+  return "请求失败（HTTP " + status + "）：" + msg;
+}
+function showError(text){ const b=$("errorBox"); b.style.display="block"; b.textContent = "⚠ " + text; }
+
+async function analyze(){
+  const key = store.k;
+  if(!key){ showError("请先在上方设置区填入 Gemini API Key（可点「测试连接」确认有效）。"); $("apiKey").focus(); return; }
+  const url = normalizeYouTubeUrl($("videoUrl").value);
+  if(!url){ showError("无法识别这个链接。请粘贴形如 https://www.youtube.com/watch?v=xxx 或 https://youtube.com/shorts/xxx 的 YouTube 链接。"); return; }
+
+  const opts = { fullScript:toggleOn("fullScript"), storyboard:toggleOn("storyboard"), titleCover:toggleOn("titleCover"), topicIdeas:toggleOn("topicIdeas") };
+  $("analyzeBtn").disabled = true;
+  startProgress();
+
+  try{
+    const body = {
+      contents: [{ role:"user", parts: [ { file_data: { file_uri: url } }, { text: buildPrompt(opts) } ] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 65536, responseMimeType: "application/json" }
+    };
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+store.model+":generateContent", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "x-goog-api-key":key },
+      body: JSON.stringify(body)
+    });
+    const j = await r.json().catch(()=>null);
+    if(!r.ok){
+      throw new Error(friendlyError(r.status, j && j.error ? j.error.message : ""));
+    }
+    const cand = j && j.candidates && j.candidates[0];
+    if(!cand || !cand.content || !cand.content.parts || !cand.content.parts.length){
+      const block = j && j.promptFeedback && j.promptFeedback.blockReason;
+      throw new Error(block ? ("请求被安全策略拦截（"+block+"），换一条视频试试。") : "模型没有返回内容，请重试。");
+    }
+    if(cand.finishReason === "MAX_TOKENS"){
+      throw new Error("输出内容太长被截断了。请关掉几个生成开关（如分镜表/选题库）减少输出量后重试。");
+    }
+    const text = cand.content.parts.map(p=>p.text||"").join("");
+    let data;
+    try{ data = JSON.parse(text); }
+    catch(e){ throw new Error("模型返回的内容无法解析（可能被截断）。请重试一次，或减少生成开关数量。"); }
+    setStep(4);
+    render(data, url);
+  }catch(e){
+    const msg = e.message || String(e);
+    showError(/failed to fetch|networkerror|load failed/i.test(msg)
+      ? "网络请求失败：浏览器无法连接到 Google Gemini 服务。请检查你的网络能否访问 Google（可能需要科学上网），然后重试。"
+      : msg);
+  }finally{
+    stopProgress();
+    $("analyzeBtn").disabled = false;
+  }
+}
+$("analyzeBtn").onclick = analyze;
+$("videoUrl").addEventListener("keydown", e => { if(e.key==="Enter") analyze(); });
+
+/* ---------- 渲染 ---------- */
+let lastData = null, lastUrl = "";
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function kvItem(k,v){ return v ? '<div class="item"><span class="k">'+esc(k)+'</span><span class="v">'+esc(v)+'</span></div>' : ""; }
+
+function render(d, url){
+  lastData = d; lastUrl = url;
+  $("rTitle").textContent = (d.overview && d.overview.videoTitle) || "拆解报告";
+  $("rUrl").textContent = url + " · " + store.model;
+
+  const tabs = [];
+  tabs.push(["overview","📊 总览", renderOverview(d)]);
+  if(d.timeline && d.timeline.length) tabs.push(["timeline","🎬 视频拆解", renderTimeline(d.timeline)]);
+  if(d.viralFormula) tabs.push(["formula","🔥 爆款公式", renderFormula(d.viralFormula)]);
+  if(d.remake) tabs.push(["remake","♻️ 原创复刻", renderRemake(d.remake)]);
+  if(d.fullScript) tabs.push(["script","📝 完整脚本", renderScript(d.fullScript)]);
+  if(d.storyboard && d.storyboard.length) tabs.push(["storyboard","🎞 分镜表", renderStoryboard(d.storyboard)]);
+  if(d.titleCover) tabs.push(["titlecover","🖼 标题封面", renderTitleCover(d.titleCover)]);
+  if(d.topicIdeas && d.topicIdeas.length) tabs.push(["ideas","💡 选题库", renderIdeas(d.topicIdeas)]);
+  if(d.checklist && d.checklist.length) tabs.push(["checklist","✅ 制作清单", renderChecklist(d.checklist)]);
+
+  $("tabs").innerHTML = tabs.map(([id,name],i)=>'<div class="tab'+(i===0?" active":"")+'" data-tab="'+id+'">'+name+'</div>').join("");
+  $("panels").innerHTML = tabs.map(([id,,html],i)=>'<div class="card panel'+(i===0?" active":"")+'" id="panel-'+id+'">'+html+'</div>').join("");
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.onclick = ()=>{
+      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+      t.classList.add("active");
+      $("panel-"+t.dataset.tab).classList.add("active");
+    };
+  });
+  $("result").style.display="block";
+  $("result").scrollIntoView({behavior:"smooth"});
+}
+
+function renderOverview(d){
+  const o = d.overview||{};
+  let h = "";
+  if(o.viralScore!=null) h += '<div class="score-row"><div class="score-num">'+esc(o.viralScore)+'<small> /100 爆款指数</small></div><div style="font-size:13px;color:var(--text2)">'+esc(o.scoreReason||"")+'</div></div>';
+  h += '<div class="kv">'+kvItem("视频类型",o.videoType)+kvItem("目标受众",o.targetAudience)+kvItem("视频时长",o.duration)+kvItem("核心主题",o.coreTheme)+'</div>';
+  if(o.summary) h += '<div class="section-title">内容概述</div><div class="prose">'+esc(o.summary)+'</div>';
+  const opt = d.optimization||[];
+  if(opt.length){
+    h += '<div class="section-title">优化建议</div><div class="grid2">'+opt.map(x=>'<div class="mini-card"><span class="tag">'+esc(x.aspect||"建议")+'</span><p>'+esc(x.suggestion||"")+'</p></div>').join("")+'</div>';
+  }
+  return h;
+}
+function renderTimeline(list){
+  return '<h2><span class="dot"></span>时间线拆解</h2>' + list.map(s=>
+    '<div class="seg"><div class="seg-head"><span class="time-badge">'+esc(s.timeRange||"")+'</span><b>'+esc(s.title||"")+'</b></div>'+
+    '<div class="kv">'+kvItem("画面",s.visual)+kvItem("声音/对白",s.audio)+kvItem("叙事功能",s.narrativeFunction)+kvItem("留存技巧",s.retentionTechnique)+kvItem("剪辑手法",s.editingTechnique)+kvItem("可模仿点",s.imitationPoint)+'</div></div>'
+  ).join("");
+}
+function renderFormula(f){
+  let h = "";
+  if(f.formula) h += '<div class="seg" style="border-color:var(--red)"><b>🧪 一句话公式：</b><span class="prose">'+esc(f.formula)+'</span></div>';
+  if(f.hook) h += '<div class="section-title">0-5 秒钩子分析</div><div class="kv">'+kvItem("技巧",f.hook.technique)+'</div><div class="prose" style="margin-top:6px">'+esc(f.hook.analysis||"")+'</div>';
+  if(f.emotionCurve && f.emotionCurve.length){
+    h += '<div class="section-title">情绪曲线</div><div class="table-scroll"><table><tr><th>阶段</th><th>观众情绪</th><th>触发方式</th></tr>'+
+      f.emotionCurve.map(e=>'<tr><td>'+esc(e.stage)+'</td><td>'+esc(e.emotion)+'</td><td>'+esc(e.trigger)+'</td></tr>').join("")+'</table></div>';
+  }
+  if(f.mechanisms && f.mechanisms.length){
+    h += '<div class="section-title">爆款机制</div><div class="grid2">'+f.mechanisms.map(m=>'<div class="mini-card"><b>'+esc(m.name||"")+'</b><p>'+esc(m.explanation||"")+'</p><p style="margin-top:6px"><span class="tag">如何复用</span><br>'+esc(m.howToCopy||"")+'</p></div>').join("")+'</div>';
+  }
+  return h;
+}
+function renderRemake(r){
+  let h = "";
+  if(r.strategy) h += '<div class="section-title">复刻策略</div><div class="prose">'+esc(r.strategy)+'</div>';
+  if(r.newAngles && r.newAngles.length) h += '<div class="section-title">原创改编角度</div><div class="grid2">'+r.newAngles.map(a=>'<div class="mini-card"><b>'+esc(a.angle||"")+'</b><p>'+esc(a.reason||"")+'</p></div>').join("")+'</div>';
+  if(r.notes) h += '<div class="section-title">注意事项</div><div class="prose">'+esc(r.notes)+'</div>';
+  return h;
+}
+function renderScript(s){
+  let h = '<div class="kv">'+kvItem("新标题",s.title)+kvItem("结尾 CTA",s.cta)+'</div>';
+  if(s.hook) h += '<div class="section-title">开场钩子（0-3 秒）</div><div class="prose">'+esc(s.hook)+'</div>';
+  if(s.segments && s.segments.length){
+    h += '<div class="section-title">分段脚本</div><div class="table-scroll"><table><tr><th>段落</th><th>时长</th><th>口播/台词</th><th>画面提示</th></tr>'+
+      s.segments.map(x=>'<tr><td>'+esc(x.section)+'</td><td>'+esc(x.duration)+'</td><td>'+esc(x.voiceover)+'</td><td>'+esc(x.visualNote)+'</td></tr>').join("")+'</table></div>';
+  }
+  return h;
+}
+function renderStoryboard(list){
+  return '<div class="table-scroll"><table><tr><th>#</th><th>时间</th><th>景别/运镜</th><th>画面</th><th>台词/旁白</th><th>字幕</th><th>BGM/音效</th></tr>'+
+    list.map(x=>'<tr><td>'+esc(x.shotNo)+'</td><td>'+esc(x.timeRange)+'</td><td>'+esc(x.shotType)+'</td><td>'+esc(x.visual)+'</td><td>'+esc(x.dialogueOrVO)+'</td><td>'+esc(x.subtitle)+'</td><td>'+esc(x.bgmSfx)+'</td></tr>').join("")+'</table></div>';
+}
+function renderTitleCover(t){
+  let h = "";
+  if(t.titles && t.titles.length) h += '<div class="section-title">候选标题</div><ul class="plain">'+t.titles.map(x=>'<li><b>'+esc(x.title||"")+'</b><br><span style="color:var(--text2)">'+esc(x.logic||"")+'</span></li>').join("")+'</ul>';
+  if(t.coverIdeas && t.coverIdeas.length) h += '<div class="section-title">封面方案</div><div class="grid2">'+t.coverIdeas.map(c=>'<div class="mini-card"><span class="tag">封面大字：'+esc(c.textOnCover||"")+'</span><b>'+esc(c.idea||"")+'</b><p>'+esc(c.visualStyle||"")+'</p></div>').join("")+'</div>';
+  return h;
+}
+function renderIdeas(list){
+  return '<div class="grid2">'+list.map((x,i)=>'<div class="mini-card"><span class="tag">选题 '+(i+1)+'</span><b>'+esc(x.title||"")+'</b><p><b style="font-size:12px">爆点逻辑：</b>'+esc(x.hookLogic||"")+'</p><p style="margin-top:4px"><b style="font-size:12px">可传播原因：</b>'+esc(x.viralReason||"")+'</p></div>').join("")+'</div>';
+}
+function renderChecklist(list){
+  return list.map(p=>'<div class="section-title">'+esc(p.phase||"")+'</div><ul class="plain">'+(p.items||[]).map(i=>'<li>☐ '+esc(i)+'</li>').join("")+'</ul>').join("");
+}
+
+/* ---------- 导出 ---------- */
+function download(filename, text, mime){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type:mime}));
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+$("exportJson").onclick = () => { if(lastData) download("拆解报告.json", JSON.stringify(lastData,null,2), "application/json"); };
+$("exportMd").onclick = () => { if(lastData) download("拆解报告.md", toMarkdown(lastData), "text/markdown"); };
+
+function toMarkdown(d){
+  const L = [];
+  const o = d.overview||{};
+  L.push("# " + (o.videoTitle||"YouTube 爆款拆解报告"), "", "> " + lastUrl, "");
+  L.push("## 📊 总览","");
+  L.push("| 项目 | 内容 |","|---|---|");
+  [["视频类型",o.videoType],["目标受众",o.targetAudience],["时长",o.duration],["核心主题",o.coreTheme],["爆款指数",o.viralScore!=null?o.viralScore+"/100（"+(o.scoreReason||"")+"）":null]]
+    .forEach(([k,v])=>{ if(v!=null) L.push("| "+k+" | "+String(v).replace(/\n/g," ")+" |"); });
+  if(o.summary) L.push("", o.summary);
+  if(d.timeline && d.timeline.length){
+    L.push("","## 🎬 时间线拆解","");
+    d.timeline.forEach(s=>{
+      L.push("### "+(s.timeRange||"")+" "+(s.title||""),"");
+      [["画面",s.visual],["声音/对白",s.audio],["叙事功能",s.narrativeFunction],["留存技巧",s.retentionTechnique],["剪辑手法",s.editingTechnique],["可模仿点",s.imitationPoint]]
+        .forEach(([k,v])=>{ if(v) L.push("- **"+k+"**："+v); });
+      L.push("");
+    });
+  }
+  const f = d.viralFormula;
+  if(f){
+    L.push("## 🔥 爆款公式","");
+    if(f.formula) L.push("**一句话公式**："+f.formula,"");
+    if(f.hook) L.push("**钩子技巧**："+(f.hook.technique||""),"",f.hook.analysis||"","");
+    (f.emotionCurve||[]).length && L.push("### 情绪曲线","| 阶段 | 情绪 | 触发方式 |","|---|---|---|",...f.emotionCurve.map(e=>"| "+(e.stage||"")+" | "+(e.emotion||"")+" | "+(e.trigger||"")+" |"),"");
+    (f.mechanisms||[]).forEach(m=>L.push("- **"+(m.name||"")+"**："+(m.explanation||"")+"（复用："+(m.howToCopy||"")+"）"));
+  }
+  const r = d.remake;
+  if(r){
+    L.push("","## ♻️ 原创复刻","", r.strategy||"","");
+    (r.newAngles||[]).forEach(a=>L.push("- **"+(a.angle||"")+"**："+(a.reason||"")));
+    if(r.notes) L.push("","> "+r.notes);
+  }
+  const s = d.fullScript;
+  if(s){
+    L.push("","## 📝 完整脚本","","**标题**："+(s.title||""),"","**开场钩子**："+(s.hook||""),"");
+    (s.segments||[]).length && L.push("| 段落 | 时长 | 口播/台词 | 画面提示 |","|---|---|---|---|",...s.segments.map(x=>"| "+(x.section||"")+" | "+(x.duration||"")+" | "+String(x.voiceover||"").replace(/\n/g,"<br>")+" | "+String(x.visualNote||"").replace(/\n/g,"<br>")+" |"));
+    if(s.cta) L.push("","**结尾 CTA**："+s.cta);
+  }
+  if(d.storyboard && d.storyboard.length){
+    L.push("","## 🎞 分镜表","","| # | 时间 | 景别/运镜 | 画面 | 台词/旁白 | 字幕 | BGM/音效 |","|---|---|---|---|---|---|---|",
+      ...d.storyboard.map(x=>"| "+(x.shotNo||"")+" | "+(x.timeRange||"")+" | "+(x.shotType||"")+" | "+(x.visual||"")+" | "+(x.dialogueOrVO||"")+" | "+(x.subtitle||"")+" | "+(x.bgmSfx||"")+" |"));
+  }
+  const t = d.titleCover;
+  if(t){
+    L.push("","## 🖼 标题封面方案","");
+    (t.titles||[]).forEach(x=>L.push("- **"+(x.title||"")+"** —— "+(x.logic||"")));
+    (t.coverIdeas||[]).length && L.push("","### 封面创意", ...t.coverIdeas.map(c=>"- 大字「"+(c.textOnCover||"")+"」："+(c.idea||"")+"（"+(c.visualStyle||"")+"）"));
+  }
+  if(d.topicIdeas && d.topicIdeas.length){
+    L.push("","## 💡 同题材选题库","");
+    d.topicIdeas.forEach((x,i)=>L.push((i+1)+". **"+(x.title||"")+"**","   - 爆点逻辑："+(x.hookLogic||""),"   - 可传播原因："+(x.viralReason||"")));
+  }
+  if(d.checklist && d.checklist.length){
+    L.push("","## ✅ 制作清单","");
+    d.checklist.forEach(p=>{ L.push("### "+(p.phase||"")); (p.items||[]).forEach(i=>L.push("- [ ] "+i)); L.push(""); });
+  }
+  if(d.optimization && d.optimization.length){
+    L.push("","## 📈 优化建议","");
+    d.optimization.forEach(x=>L.push("- **"+(x.aspect||"")+"**："+(x.suggestion||"")));
+  }
+  return L.join("\n");
+}
+</script>
+</body>
+</html>
