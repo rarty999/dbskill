@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube 爆款文案拆解助手 · 文案版</title>
+<style>
+  :root{
+    --red:#e02424; --red-dark:#c81e1e; --red-soft:#fde8e8;
+    --bg:#f6f7f9; --card:#ffffff; --text:#1a202c; --text2:#5a6472;
+    --border:#e4e7ec; --input-bg:#ffffff; --tab-bg:#eef0f3;
+    --ok:#0e9f6e; --warn:#c27803; --blue:#1c64f2; --blue-soft:#e8f0fe;
+    --shadow:0 1px 3px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.04);
+  }
+  html[data-theme="dark"]{
+    --red:#f05252; --red-dark:#e02424; --red-soft:#3b1a1a;
+    --bg:#111418; --card:#1b2027; --text:#e8eaee; --text2:#9aa4b2;
+    --border:#2c333d; --input-bg:#12161b; --tab-bg:#242a33;
+    --blue:#5c8bf5; --blue-soft:#1a2540;
+    --shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.65;font-size:14px}
+  .wrap{max-width:960px;margin:0 auto;padding:20px 16px 60px}
+
+  header{display:flex;align-items:center;gap:10px;padding:6px 0 18px}
+  .logo{width:34px;height:34px;border-radius:8px;background:var(--red);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .logo svg{width:20px;height:20px;fill:#fff}
+  header h1{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .badge{font-size:11px;background:var(--blue-soft);color:var(--blue);border-radius:5px;padding:1px 8px;font-weight:600}
+  header .sub{font-size:12px;color:var(--text2)}
+  .spacer{flex:1}
+  .icon-btn{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+  .icon-btn:hover{border-color:var(--red)}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:18px;margin-bottom:14px}
+  .card h2{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .card h2 .dot{width:6px;height:6px;border-radius:50%;background:var(--red)}
+
+  label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px}
+  input[type=text],input[type=password],select,textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-size:14px;outline:none;font-family:inherit}
+  input:focus,select:focus,textarea:focus{border-color:var(--red)}
+  textarea{resize:vertical;min-height:140px;line-height:1.7}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:220px}
+
+  .btn{background:var(--red);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s}
+  .btn:hover{background:var(--red-dark)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:transparent;color:var(--red);border:1px solid var(--red)}
+  .btn.small{padding:7px 14px;font-size:12px}
+
+  .hint{font-size:12px;color:var(--text2);margin-top:6px}
+  .hint a{color:var(--red)}
+  .key-status{font-size:12px;margin-top:6px}
+  .key-status.ok{color:var(--ok)} .key-status.err{color:var(--red)}
+
+  /* 输入模式切换 */
+  .mode-switch{display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:14px}
+  .mode-switch button{border:none;background:var(--tab-bg);color:var(--text2);padding:8px 18px;font-size:13px;cursor:pointer}
+  .mode-switch button.active{background:var(--red);color:#fff;font-weight:600}
+
+  /* progress */
+  #progress{display:none}
+  .steps{display:flex;flex-direction:column;gap:10px}
+  .step{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)}
+  .step .ico{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .step.active{color:var(--text)}
+  .step.active .ico{border-color:var(--red);border-top-color:transparent;animation:spin 1s linear infinite}
+  .step.done .ico{border-color:var(--ok);background:var(--ok)}
+  .step.done .ico::after{content:"✓";color:#fff;font-size:11px}
+  .step .note{font-size:12px;color:var(--text2)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .progress-note{font-size:12px;color:var(--text2);margin-top:12px}
+
+  #errorBox{display:none;border-left:3px solid var(--red);background:var(--red-soft);border-radius:8px;padding:12px 14px;font-size:13px;margin-bottom:14px;white-space:pre-wrap}
+
+  /* result */
+  #result{display:none}
+  .result-head{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .result-head .title{flex:1;min-width:200px}
+  .result-head .title b{font-size:15px}
+  .result-head .title .url{font-size:12px;color:var(--text2);word-break:break-all}
+  .export-btns{display:flex;gap:8px}
+
+  .tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px;-webkit-overflow-scrolling:touch}
+  .tab{white-space:nowrap;border:1px solid var(--border);background:var(--tab-bg);color:var(--text2);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer}
+  .tab.active{background:var(--red);border-color:var(--red);color:#fff;font-weight:600}
+  .panel{display:none}
+  .panel.active{display:block}
+
+  .seg{border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px}
+  .seg-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .time-badge{background:var(--red-soft);color:var(--red);font-weight:700;font-size:12px;border-radius:6px;padding:2px 8px}
+  .seg-head b{font-size:14px}
+  .quote{border-left:3px solid var(--border);padding:6px 12px;margin:8px 0;font-size:13px;color:var(--text2);font-style:italic;background:var(--tab-bg);border-radius:0 6px 6px 0}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}
+  @media(max-width:640px){.kv{grid-template-columns:1fr}}
+  .kv .item{display:flex;gap:8px;font-size:13px}
+  .kv .k{color:var(--text2);flex-shrink:0;min-width:66px}
+  .kv .v{flex:1}
+  .kv .item.full{grid-column:1/-1}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
+  .mini-card{border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .mini-card b{display:block;margin-bottom:4px;font-size:13px}
+  .mini-card p{font-size:13px;color:var(--text2)}
+  .mini-card .tag{display:inline-block;background:var(--red-soft);color:var(--red);font-size:11px;border-radius:5px;padding:1px 7px;margin-bottom:6px;margin-right:4px}
+  .tag.blue{background:var(--blue-soft);color:var(--blue)}
+
+  .score-row{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .score-num{font-size:34px;font-weight:800;color:var(--red)}
+  .score-num small{font-size:14px;color:var(--text2);font-weight:400}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--tab-bg);font-weight:600;white-space:nowrap}
+  .table-scroll{overflow-x:auto}
+
+  ul.plain{list-style:none}
+  ul.plain li{padding:6px 0;border-bottom:1px dashed var(--border);font-size:13px}
+  ul.plain li:last-child{border-bottom:none}
+
+  .section-title{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--red)}
+  .prose{font-size:13.5px;white-space:pre-wrap}
+  .transcript{font-size:13.5px;white-space:pre-wrap;line-height:1.9;max-height:520px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:14px}
+
+  /* 选题卡片 */
+  .topic-card{border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px}
+  .topic-card.recommended{border-color:var(--red)}
+  .topic-head{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .topic-head b{font-size:14.5px;flex:1;min-width:200px}
+  .topic-body .item{margin-bottom:6px;font-size:13px;display:flex;gap:8px}
+  .topic-body .k{color:var(--text2);flex-shrink:0;min-width:80px}
+  .topic-outline{margin:6px 0 6px 88px;font-size:13px;color:var(--text2)}
+  .topic-outline li{margin-bottom:2px}
+  .topic-foot{margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .gen-status{font-size:12px;color:var(--text2)}
+
+  .script-block{border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px}
+  .script-block .voiceover{white-space:pre-wrap;font-size:13.5px;line-height:1.9;margin:6px 0 10px}
+  .loading-inline{display:flex;align-items:center;gap:10px;color:var(--text2);font-size:13px;padding:20px 0;justify-content:center}
+  .loading-inline .ico{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--red);animation:spin 1s linear infinite}
+  footer{text-align:center;font-size:12px;color:var(--text2);margin-top:30px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></div>
+    <div>
+      <h1>YouTube 爆款文案拆解助手 <span class="badge">文案版 · 长视频省额度</span></h1>
+      <div class="sub">只分析文案不看画面：转写口播 → 拆解爆款逻辑 → 深度选题 → 二次创作脚本</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="themeBtn">🌙 深色</button>
+    <button class="icon-btn" id="settingsBtn">⚙️ 设置</button>
+  </header>
+
+  <!-- 设置 -->
+  <div class="card" id="settingsCard">
+    <h2><span class="dot"></span>API 设置（Key 只保存在你自己的浏览器里，与画面版共用）</h2>
+    <div class="row">
+      <div style="flex:2">
+        <label>Gemini API Key</label>
+        <input type="password" id="apiKey" placeholder="粘贴你的 Gemini API Key（AIza 开头）" autocomplete="off">
+        <div class="hint">还没有 Key？去 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> 免费申请。</div>
+        <div class="key-status" id="keyStatus"></div>
+      </div>
+      <div>
+        <label>模型</label>
+        <select id="model">
+          <option value="gemini-2.5-flash">Gemini 2.5 Flash（推荐）</option>
+          <option value="gemini-2.5-pro">Gemini 2.5 Pro（分析更深，更慢更贵）</option>
+          <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite（最省额度）</option>
+        </select>
+        <div style="margin-top:10px"><button class="btn ghost small" id="testKeyBtn">测试连接</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 输入 -->
+  <div class="card">
+    <h2><span class="dot"></span>要拆解的内容</h2>
+    <div class="mode-switch">
+      <button id="modeUrl" class="active">YouTube 链接</button>
+      <button id="modeText">直接粘贴文稿</button>
+    </div>
+
+    <div id="urlMode">
+      <label>YouTube 视频链接（支持 10 分钟以上长视频，必须是公开视频）</label>
+      <input type="text" id="videoUrl" placeholder="https://www.youtube.com/watch?v=...">
+      <div class="hint">省额度原理：以最低画质、每 5 秒 1 帧的采样率读取，只让 AI 转写口播文稿，完全不分析画面。10 分钟视频约消耗 2~3 万 token（约为画面版的 1/8）。同一视频的文稿会缓存在本机，重复分析不再重复转写。</div>
+    </div>
+
+    <div id="textMode" style="display:none">
+      <label>粘贴视频文稿 / 字幕 / 口播文案（有现成文字时用这个，完全不消耗视频 token）</label>
+      <textarea id="pastedText" placeholder="把视频的字幕或文案全文粘贴到这里……"></textarea>
+    </div>
+
+    <div style="margin-top:12px">
+      <label>你的账号定位 / 领域（强烈建议填写——选题会围绕你的赛道做深度迁移，而不是泛泛推荐）</label>
+      <input type="text" id="niche" placeholder="例如：面向宝妈的家庭教育频道 / 讲个人成长的中文口播号 / 数码测评……">
+    </div>
+
+    <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn" id="analyzeBtn">开始拆解</button>
+      <span class="hint" style="margin:0">流程：获取文稿 → 拆解文案逻辑 → 生成深度选题 → 为推荐选题生成完整脚本</span>
+    </div>
+  </div>
+
+  <!-- 进度 -->
+  <div class="card" id="progress">
+    <h2><span class="dot"></span>正在分析</h2>
+    <div class="steps">
+      <div class="step" id="st0"><div class="ico"></div><span>获取文稿（转写口播，长视频需几分钟）<span class="note" id="st0note"></span></span></div>
+      <div class="step" id="st1"><div class="ico"></div><span>拆解文案结构与爆款逻辑</span></div>
+      <div class="step" id="st2"><div class="ico"></div><span>基于爆款逻辑生成深度选题</span></div>
+      <div class="step" id="st3"><div class="ico"></div><span>为推荐选题生成完整口播脚本</span></div>
+    </div>
+    <div class="progress-note">已等待 <span id="elapsed">0</span> 秒 · 分析完成前请勿关闭页面（前面步骤完成后会先展示结果）</div>
+  </div>
+
+  <div id="errorBox"></div>
+
+  <!-- 结果 -->
+  <div id="result">
+    <div class="card">
+      <div class="result-head">
+        <div class="title">
+          <b id="rTitle">—</b>
+          <div class="url" id="rUrl"></div>
+        </div>
+        <div class="export-btns">
+          <button class="icon-btn" id="exportMd">📄 导出 Markdown</button>
+          <button class="icon-btn" id="exportJson">🧾 导出 JSON</button>
+        </div>
+      </div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div id="panels"></div>
+  </div>
+
+  <footer>本工具不存储任何数据 · API Key 与文稿缓存仅保存在本机浏览器 · 分析结果由 AI 生成，仅供创作参考 · 二次创作请做原创化改编</footer>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const store = {
+  get k(){ return localStorage.getItem("yvb_key")||"" },
+  set k(v){ localStorage.setItem("yvb_key", v) },
+  get model(){ return localStorage.getItem("yvb_model")||"gemini-2.5-flash" },
+  set model(v){ localStorage.setItem("yvb_model", v) },
+  get theme(){ return localStorage.getItem("yvb_theme")||"light" },
+  set theme(v){ localStorage.setItem("yvb_theme", v) },
+  get niche(){ return localStorage.getItem("ycb_niche")||"" },
+  set niche(v){ localStorage.setItem("ycb_niche", v) },
+};
+
+/* ---------- 文稿缓存（按视频 ID，最多存 12 条） ---------- */
+const cache = {
+  read(id){ try{ const m = JSON.parse(localStorage.getItem("ycb_cache")||"{}"); return m[id] ? m[id].t : null; }catch(e){ return null; } },
+  write(id, transcript){
+    try{
+      let m = {}; try{ m = JSON.parse(localStorage.getItem("ycb_cache")||"{}"); }catch(e){}
+      m[id] = { t: transcript, ts: Date.now() };
+      const keys = Object.keys(m).sort((a,b)=>m[b].ts-m[a].ts);
+      keys.slice(12).forEach(k=>delete m[k]);
+      localStorage.setItem("ycb_cache", JSON.stringify(m));
+    }catch(e){ /* 超出容量则放弃缓存，不影响主流程 */ }
+  }
+};
+
+/* ---------- 主题 / 设置 ---------- */
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  $("themeBtn").textContent = t==="dark" ? "☀️ 浅色" : "🌙 深色";
+}
+applyTheme(store.theme);
+$("themeBtn").onclick = () => { store.theme = store.theme==="dark"?"light":"dark"; applyTheme(store.theme); };
+$("apiKey").value = store.k;
+$("model").value = store.model;
+$("niche").value = store.niche;
+$("apiKey").addEventListener("input", e => { store.k = e.target.value.trim(); $("keyStatus").textContent=""; });
+$("model").addEventListener("change", e => store.model = e.target.value);
+$("niche").addEventListener("input", e => store.niche = e.target.value.trim());
+$("settingsBtn").onclick = () => { $("settingsCard").scrollIntoView({behavior:"smooth"}); $("apiKey").focus(); };
+
+$("testKeyBtn").onclick = async () => {
+  const key = store.k, st = $("keyStatus");
+  if(!key){ st.className="key-status err"; st.textContent="请先粘贴 API Key"; return; }
+  st.className="key-status"; st.textContent="正在测试连接…";
+  try{
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1", {headers:{"x-goog-api-key":key}});
+    if(r.ok){ st.className="key-status ok"; st.textContent="✓ 连接成功，Key 有效"; }
+    else{
+      const j = await r.json().catch(()=>({}));
+      st.className="key-status err";
+      st.textContent = "✗ Key 无效或被拒绝（" + (j.error && j.error.message ? j.error.message : ("HTTP "+r.status)) + "）";
+    }
+  }catch(e){ st.className="key-status err"; st.textContent="✗ 网络错误："+e.message+"（请检查网络能否访问 Google 服务）"; }
+};
+
+/* ---------- 输入模式 ---------- */
+let inputMode = "url";
+$("modeUrl").onclick = () => { inputMode="url"; $("modeUrl").classList.add("active"); $("modeText").classList.remove("active"); $("urlMode").style.display="block"; $("textMode").style.display="none"; };
+$("modeText").onclick = () => { inputMode="text"; $("modeText").classList.add("active"); $("modeUrl").classList.remove("active"); $("urlMode").style.display="none"; $("textMode").style.display="block"; };
+
+function parseVideoId(raw){
+  raw = (raw||"").trim();
+  const m = raw.match(/(?:youtube\.com\/(?:watch\?[^#]*v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{6,20})/);
+  return m ? m[1] : null;
+}
+
+/* ---------- Gemini 调用 ---------- */
+function friendlyError(status, msg){
+  msg = msg || "";
+  if(/API_KEY_INVALID|API key not valid/i.test(msg)) return "API Key 无效。请检查是否复制完整、有无空格，或到 Google AI Studio 重新生成。";
+  if(status===429 || /quota|RESOURCE_EXHAUSTED/i.test(msg)) return "API 额度不足或请求太频繁（429）。免费额度有每分钟/每天上限，稍等一两分钟再试，或换用 Flash-Lite 模型。";
+  if(/not found|is not supported/i.test(msg) && /model/i.test(msg)) return "所选模型不可用，请在设置里换一个模型再试。";
+  if(/video|youtube|url/i.test(msg)) return "Gemini 无法读取这条视频：请确认它是公开视频（非私享/会员专属/地区限制），且链接正确。原始错误：" + msg;
+  return "请求失败（HTTP " + status + "）：" + msg;
+}
+function netFriendly(e){
+  const msg = e.message || String(e);
+  return /failed to fetch|networkerror|load failed/i.test(msg)
+    ? "网络请求失败：浏览器无法连接到 Google Gemini 服务。请检查你的网络能否访问 Google（可能需要科学上网），然后重试。"
+    : msg;
+}
+async function callGemini(parts, cfg){
+  const body = {
+    contents: [{ role:"user", parts }],
+    generationConfig: Object.assign({ maxOutputTokens: 65536 }, cfg||{})
+  };
+  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+store.model+":generateContent", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json", "x-goog-api-key":store.k },
+    body: JSON.stringify(body)
+  });
+  const j = await r.json().catch(()=>null);
+  if(!r.ok) throw new Error(friendlyError(r.status, j && j.error ? j.error.message : ""));
+  const cand = j && j.candidates && j.candidates[0];
+  if(!cand || !cand.content || !cand.content.parts || !cand.content.parts.length){
+    const block = j && j.promptFeedback && j.promptFeedback.blockReason;
+    throw new Error(block ? ("请求被安全策略拦截（"+block+"），换一条视频试试。") : "模型没有返回内容，请重试。");
+  }
+  if(cand.finishReason === "MAX_TOKENS") throw new Error("输出太长被截断，请重试；若反复出现请换 Flash 模型或缩短输入。");
+  return cand.content.parts.map(p=>p.text||"").join("");
+}
+async function callGeminiJson(parts, cfg){
+  const text = await callGemini(parts, Object.assign({ responseMimeType:"application/json" }, cfg||{}));
+  try{ return JSON.parse(text); }
+  catch(e){ throw new Error("模型返回的内容无法解析为 JSON（可能被截断），请重试一次。"); }
+}
+
+/* ---------- Prompts ---------- */
+const P_TRANSCRIBE = `请转写这条视频的完整口播文稿。要求：
+1. 只转写说话内容（口播、旁白、对话），逐字转写，不要总结、不要缩写、不要遗漏。
+2. 完全忽略画面，不要描述画面内容。
+3. 说什么语言就用什么语言转写，不要翻译。
+4. 按自然段落分段，每段开头标注大致时间戳，格式如 [02:15]。
+5. 不要添加任何转写内容之外的说明文字。
+6. 如果整条视频没有任何说话内容，只输出：NO_SPEECH`;
+
+function pLogic(transcript){
+  return `你是一位顶级的爆款文案分析师和 YouTube 增长专家。下面是一条 YouTube 爆款视频的完整口播文稿，请你只基于文字（不考虑画面）做深度文案拆解。
+
+要求：
+1. 全程用简体中文输出（引用原文时保留原语言并附中文翻译，若原文已是中文则直接引用）。
+2. 严格按 JSON 结构输出，不要输出 JSON 以外的任何文字。
+3. 每个结论必须引用文稿原句作为证据，禁止空泛套话。
+4. "可迁移规则"必须是脱离这条视频也能用的写作方法论。
+
+JSON 结构（字段名必须完全一致）：
+{
+  "overview": {
+    "videoTitle": "根据文稿拟定或识别的视频标题",
+    "contentType": "内容类型（如：观点口播/故事叙述/教程讲解/访谈等）",
+    "targetAudience": "目标受众画像",
+    "coreTopic": "核心主题一句话",
+    "wordCount": "文稿约多少字",
+    "viralScore": 85,
+    "scoreReason": "从文案角度打分的理由（0-100）",
+    "summary": "内容概述（150字内）"
+  },
+  "structure": [
+    {
+      "part": "段落定位（如：开头钩子/立论/案例1/转折/高潮/收尾CTA）",
+      "position": "在全文的大致位置（如：开头 0-8%）",
+      "quote": "该段最关键的原文摘句",
+      "function": "叙事功能",
+      "technique": "写作手法（具体到句式层面）",
+      "psychology": "利用了观众什么心理",
+      "retention": "这段如何防止观众流失"
+    }
+  ],
+  "viralLogic": {
+    "hook": { "quote": "开头钩子原文", "analysis": "钩子为什么有效的逐句分析", "technique": "钩子技巧名称" },
+    "narrativeFramework": "整体叙事框架（框架名称+它如何组织全文）",
+    "emotionCurve": [ { "stage": "阶段", "emotion": "观众情绪", "trigger": "文案如何触发（引用原文）" } ],
+    "triggers": [ { "name": "心理触发器名称（如 好奇缺口/损失厌恶/身份认同）", "explanation": "在本文中如何运作", "example": "对应原文例句" } ],
+    "titleLogic": "这类内容的标题逻辑分析",
+    "formula": "把这条文案总结成一个可复用的爆款公式（一句话）",
+    "transferableRules": [ "可迁移写作规则1（具体、可执行）", "规则2", "规则3", "规则4", "规则5" ]
+  },
+  "goldenLines": [
+    { "quote": "金句原文", "whyItWorks": "为什么有力", "howToReuse": "句式模板：把它抽象成可套用的句式" }
+  ]
+}
+
+━━━━ 视频文稿 ━━━━
+${transcript}`;
+}
+
+function pTopics(logicJson, transcript, niche){
+  const nicheLine = niche
+    ? `用户的账号定位：「${niche}」。所有选题必须服务于这个定位——要么在该赛道纵深挖掘，要么把爆款逻辑迁移到该赛道，禁止推荐与定位无关的泛选题。`
+    : `用户未提供账号定位，请基于原视频所在的内容赛道做选题。`;
+  return `你是一位顶级的内容策略师。基于下面这条爆款视频的文案逻辑拆解结果，为用户生成一批"有深度"的选题。
+
+${nicheLine}
+
+深度选题的标准（必须全部满足）：
+1. 每个选题必须明确复用原视频的某条具体爆款逻辑（写明复用了哪条）。
+2. 每个选题必须建立在一个真实、具体的受众痛点或未被满足的好奇心上，禁止"大而空"的话题。
+3. 每个选题给出可直接开拍的开头钩子文案（完整句子，不是描述）。
+4. 选题之间不能同质化。
+
+请生成 9 个选题，三类各 3 个：
+- 纵深挖掘：同一主题往更深、更具体、更反直觉处打
+- 跨界迁移：把原视频的爆款逻辑迁移到用户定位的相邻场景
+- 反向差异化：与原视频观点或角度形成反差、对立或补充
+
+严格按 JSON 输出，不要输出 JSON 以外的文字：
+{
+  "topicStrategy": "选题总体策略：结合原视频逻辑与用户定位，说明这批选题的打法（150字内）",
+  "topics": [
+    {
+      "category": "纵深挖掘 | 跨界迁移 | 反向差异化",
+      "title": "选题标题（按爆款标题逻辑写）",
+      "titleOptions": ["备选标题A", "备选标题B"],
+      "insight": "核心洞察：这个选题背后的受众痛点/好奇缺口，要具体",
+      "audience": "精确目标人群",
+      "emotionTrigger": "主情绪触发点",
+      "logicMapping": "复用了原视频的哪条爆款逻辑，如何复用",
+      "angle": "切入角度",
+      "hook": "开头钩子文案（完整可念的句子）",
+      "outline": ["内容大纲要点1", "要点2", "要点3", "要点4"],
+      "whyViral": "可传播原因",
+      "difficulty": "制作难度：低/中/高"
+    }
+  ],
+  "recommendedIndex": 0,
+  "recommendReason": "最推荐先做哪个及原因"
+}
+
+━━━━ 爆款逻辑拆解结果 ━━━━
+${JSON.stringify(logicJson.viralLogic)}
+
+━━━━ 原视频内容概述 ━━━━
+${JSON.stringify(logicJson.overview)}
+
+━━━━ 原文稿节选（前3000字，供把握语感） ━━━━
+${transcript.slice(0,3000)}`;
+}
+
+function pScript(topic, logicJson, transcript, niche){
+  return `你是一位顶级的口播文案作者。请为下面这个选题写一篇完整的口播脚本（二次创作）。
+
+要求：
+1. 必须复用原爆款视频的叙事框架、情绪曲线和可迁移规则（见下方拆解结果），但内容必须全新原创，禁止照抄原文句子。
+2. "voiceover" 字段必须是完整的、可以直接照着念的逐字稿，不是大纲。目标总时长与原视频相当（长视频按 8-12 分钟、约 2000-3500 字撰写；如原视频更短则相应缩短）。
+3. 语言风格模仿原文稿的语感${niche ? "，并贴合账号定位「"+niche+"」" : ""}。
+4. 每个段落标注它的留存设计（在这里用什么手段留住观众）。
+5. 全程简体中文。严格按 JSON 输出，不要输出 JSON 以外的文字：
+{
+  "title": "视频标题",
+  "titleOptions": ["备选标题A", "备选标题B", "备选标题C"],
+  "estimatedDuration": "预计口播时长",
+  "hook": "开场钩子逐字稿（0-15秒）",
+  "sections": [
+    { "name": "段落名", "goal": "本段目标", "voiceover": "完整口播逐字稿", "retentionDevice": "留存设计" }
+  ],
+  "cta": "结尾引导逐字稿",
+  "notes": "拍摄/发布建议与原创性提醒"
+}
+
+━━━━ 选题 ━━━━
+${JSON.stringify(topic)}
+
+━━━━ 原视频爆款逻辑（必须复用） ━━━━
+${JSON.stringify(logicJson.viralLogic)}
+
+━━━━ 原文稿节选（前2500字，供模仿语感，禁止照抄） ━━━━
+${transcript.slice(0,2500)}`;
+}
+
+/* ---------- 主流程 ---------- */
+const state = { transcript:"", logic:null, topics:null, scripts:[], source:"" };
+let timerId = null, elapsedSec = 0;
+
+function setStep(n, skipFirst){
+  for(let i=0;i<4;i++){
+    const el = $("st"+i);
+    el.classList.toggle("done", i<n);
+    el.classList.toggle("active", i===n);
+  }
+  if(skipFirst) $("st0note").textContent = "（已用缓存/粘贴文稿，跳过）";
+}
+function startProgress(){
+  $("progress").style.display="block"; $("errorBox").style.display="none";
+  $("st0note").textContent="";
+  elapsedSec = 0; $("elapsed").textContent="0";
+  clearInterval(timerId);
+  timerId = setInterval(()=>{ elapsedSec++; $("elapsed").textContent=elapsedSec; },1000);
+}
+function stopProgress(){ clearInterval(timerId); $("progress").style.display="none"; }
+function showError(text){ const b=$("errorBox"); b.style.display="block"; b.textContent = "⚠ " + text; b.scrollIntoView({behavior:"smooth"}); }
+
+async function analyze(){
+  if(!store.k){ showError("请先在上方设置区填入 Gemini API Key（可点「测试连接」确认有效）。"); $("apiKey").focus(); return; }
+
+  let videoId = null, source = "";
+  if(inputMode === "url"){
+    videoId = parseVideoId($("videoUrl").value);
+    if(!videoId){ showError("无法识别这个链接。请粘贴形如 https://www.youtube.com/watch?v=xxx 的 YouTube 链接。"); return; }
+    source = "https://www.youtube.com/watch?v=" + videoId;
+  }else{
+    const t = $("pastedText").value.trim();
+    if(t.length < 100){ showError("粘贴的文稿太短（不足100字），无法做有效拆解。"); return; }
+    source = "（粘贴文稿）";
+  }
+
+  $("analyzeBtn").disabled = true;
+  $("result").style.display="none";
+  state.transcript=""; state.logic=null; state.topics=null; state.scripts=[]; state.source=source;
+  startProgress();
+
+  try{
+    /* 第1步：取文稿 */
+    let transcript, skipped = false;
+    if(inputMode === "text"){
+      transcript = $("pastedText").value.trim(); skipped = true;
+    }else{
+      const cached = cache.read(videoId);
+      if(cached){ transcript = cached; skipped = true; }
+      else{
+        setStep(0);
+        transcript = (await callGemini(
+          [ { file_data:{ file_uri: source }, video_metadata:{ fps: 0.2 } }, { text: P_TRANSCRIBE } ],
+          { temperature: 0.2, mediaResolution: "MEDIA_RESOLUTION_LOW" }
+        )).trim();
+        if(!transcript || /^NO_SPEECH$/m.test(transcript.slice(0,30)))
+          throw new Error("这条视频没有可转写的口播内容（可能是纯音乐/无解说视频），文案版无法分析，请换画面版工具。");
+        cache.write(videoId, transcript);
+      }
+    }
+    state.transcript = transcript;
+    setStep(1, skipped);
+
+    /* 第2步：文案逻辑拆解 */
+    state.logic = await callGeminiJson([{ text: pLogic(transcript) }], { temperature: 0.5 });
+    renderAll();          // 先展示已完成部分
+    setStep(2, skipped);
+
+    /* 第3步：深度选题 */
+    state.topics = await callGeminiJson([{ text: pTopics(state.logic, transcript, store.niche) }], { temperature: 0.8 });
+    renderAll();
+    setStep(3, skipped);
+
+    /* 第4步：为推荐选题生成脚本 */
+    const rec = state.topics.topics && state.topics.topics[state.topics.recommendedIndex || 0];
+    if(rec){
+      const script = await callGeminiJson([{ text: pScript(rec, state.logic, transcript, store.niche) }], { temperature: 0.8 });
+      script._topicTitle = rec.title;
+      state.scripts.push(script);
+      renderAll();
+    }
+    setStep(4, skipped);
+  }catch(e){
+    showError(netFriendly(e));
+    if(state.logic) renderAll();   // 已完成的部分照常展示
+  }finally{
+    stopProgress();
+    $("analyzeBtn").disabled = false;
+  }
+}
+$("analyzeBtn").onclick = analyze;
+$("videoUrl").addEventListener("keydown", e => { if(e.key==="Enter") analyze(); });
+
+/* ---------- 为指定选题生成脚本（选题卡片按钮） ---------- */
+async function genScriptFor(idx, btn){
+  const topic = state.topics.topics[idx];
+  btn.disabled = true; btn.textContent = "生成中…（约1-2分钟）";
+  try{
+    const script = await callGeminiJson([{ text: pScript(topic, state.logic, state.transcript, store.niche) }], { temperature: 0.8 });
+    script._topicTitle = topic.title;
+    state.scripts.push(script);
+    renderAll();
+    document.querySelector('.tab[data-tab="script"]').click();
+  }catch(e){
+    alert("脚本生成失败：" + netFriendly(e));
+  }finally{
+    btn.disabled = false; btn.textContent = "✍️ 为此选题生成完整脚本";
+  }
+}
+
+/* ---------- 渲染 ---------- */
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const kvItem = (k,v,full) => v ? '<div class="item'+(full?" full":"")+'"><span class="k">'+esc(k)+'</span><span class="v">'+esc(v)+'</span></div>' : "";
+
+let activeTab = "overview";
+function renderAll(){
+  const d = state.logic;
+  if(!d) return;
+  $("rTitle").textContent = (d.overview && d.overview.videoTitle) || "文案拆解报告";
+  $("rUrl").textContent = state.source + " · " + store.model + " · 文案版";
+
+  const tabs = [];
+  tabs.push(["overview","📊 总览", renderOverview(d)]);
+  if(d.structure && d.structure.length) tabs.push(["structure","🧩 文案拆解", renderStructure(d.structure)]);
+  if(d.viralLogic) tabs.push(["logic","🔥 爆款逻辑", renderLogic(d.viralLogic)]);
+  tabs.push(["topics","💡 深度选题", state.topics ? renderTopics(state.topics) : loadingHtml("正在基于爆款逻辑生成深度选题…")]);
+  tabs.push(["script","✍️ 复刻脚本", state.scripts.length ? renderScripts(state.scripts) : loadingHtml("将为推荐选题自动生成完整口播脚本…（也可在选题页手动选择）")]);
+  if(d.goldenLines && d.goldenLines.length) tabs.push(["golden","💬 金句钩子库", renderGolden(d.goldenLines)]);
+  if(state.transcript) tabs.push(["transcript","📃 完整文稿", '<div class="transcript">'+esc(state.transcript)+'</div>']);
+
+  $("tabs").innerHTML = tabs.map(([id,name])=>'<div class="tab'+(id===activeTab?" active":"")+'" data-tab="'+id+'">'+name+'</div>').join("");
+  $("panels").innerHTML = tabs.map(([id,,html])=>'<div class="card panel'+(id===activeTab?" active":"")+'" id="panel-'+id+'">'+html+'</div>').join("");
+  if(!document.querySelector(".tab.active")){ activeTab = tabs[0][0]; document.querySelector(".tab").classList.add("active"); document.querySelector(".panel").classList.add("active"); }
+
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.onclick = ()=>{
+      activeTab = t.dataset.tab;
+      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+      t.classList.add("active");
+      $("panel-"+activeTab).classList.add("active");
+    };
+  });
+  document.querySelectorAll("[data-genscript]").forEach(b=>{
+    b.onclick = ()=>genScriptFor(parseInt(b.dataset.genscript,10), b);
+  });
+  $("result").style.display="block";
+}
+const loadingHtml = t => '<div class="loading-inline"><div class="ico"></div>'+esc(t)+'</div>';
+
+function renderOverview(d){
+  const o = d.overview||{};
+  let h = "";
+  if(o.viralScore!=null) h += '<div class="score-row"><div class="score-num">'+esc(o.viralScore)+'<small> /100 文案爆款指数</small></div><div style="font-size:13px;color:var(--text2)">'+esc(o.scoreReason||"")+'</div></div>';
+  h += '<div class="kv">'+kvItem("内容类型",o.contentType)+kvItem("目标受众",o.targetAudience)+kvItem("文稿字数",o.wordCount)+kvItem("核心主题",o.coreTopic)+'</div>';
+  if(o.summary) h += '<div class="section-title">内容概述</div><div class="prose">'+esc(o.summary)+'</div>';
+  return h;
+}
+function renderStructure(list){
+  return '<h2><span class="dot"></span>文案结构逐段拆解</h2>' + list.map(s=>
+    '<div class="seg"><div class="seg-head"><span class="time-badge">'+esc(s.position||"")+'</span><b>'+esc(s.part||"")+'</b></div>'+
+    (s.quote?'<div class="quote">“'+esc(s.quote)+'”</div>':"")+
+    '<div class="kv">'+kvItem("叙事功能",s.function)+kvItem("写作手法",s.technique)+kvItem("心理机制",s.psychology)+kvItem("留存设计",s.retention)+'</div></div>'
+  ).join("");
+}
+function renderLogic(f){
+  let h = "";
+  if(f.formula) h += '<div class="seg" style="border-color:var(--red)"><b>🧪 一句话公式：</b><span class="prose">'+esc(f.formula)+'</span></div>';
+  if(f.hook){
+    h += '<div class="section-title">开头钩子分析</div>';
+    if(f.hook.quote) h += '<div class="quote">“'+esc(f.hook.quote)+'”</div>';
+    h += '<div class="kv">'+kvItem("技巧",f.hook.technique)+'</div><div class="prose" style="margin-top:6px">'+esc(f.hook.analysis||"")+'</div>';
+  }
+  if(f.narrativeFramework) h += '<div class="section-title">叙事框架</div><div class="prose">'+esc(f.narrativeFramework)+'</div>';
+  if(f.emotionCurve && f.emotionCurve.length){
+    h += '<div class="section-title">情绪曲线</div><div class="table-scroll"><table><tr><th>阶段</th><th>观众情绪</th><th>文案触发方式</th></tr>'+
+      f.emotionCurve.map(e=>'<tr><td>'+esc(e.stage)+'</td><td>'+esc(e.emotion)+'</td><td>'+esc(e.trigger)+'</td></tr>').join("")+'</table></div>';
+  }
+  if(f.triggers && f.triggers.length){
+    h += '<div class="section-title">心理触发器</div><div class="grid2">'+f.triggers.map(m=>'<div class="mini-card"><b>'+esc(m.name||"")+'</b><p>'+esc(m.explanation||"")+'</p>'+(m.example?'<div class="quote">“'+esc(m.example)+'”</div>':"")+'</div>').join("")+'</div>';
+  }
+  if(f.titleLogic) h += '<div class="section-title">标题逻辑</div><div class="prose">'+esc(f.titleLogic)+'</div>';
+  if(f.transferableRules && f.transferableRules.length)
+    h += '<div class="section-title">可迁移写作规则（拿走就能用）</div><ul class="plain">'+f.transferableRules.map((r,i)=>'<li>'+(i+1)+'. '+esc(r)+'</li>').join("")+'</ul>';
+  return h;
+}
+function renderTopics(t){
+  let h = "";
+  if(t.topicStrategy) h += '<div class="seg" style="border-color:var(--red)"><b>🎯 选题策略：</b><span class="prose">'+esc(t.topicStrategy)+'</span></div>';
+  const rec = t.recommendedIndex || 0;
+  h += (t.topics||[]).map((x,i)=>{
+    const isRec = i===rec;
+    return '<div class="topic-card'+(isRec?" recommended":"")+'">'+
+      '<div class="topic-head">'+
+        '<span class="tag blue">'+esc(x.category||"")+'</span>'+
+        (isRec?'<span class="tag">⭐ 推荐首发</span>':"")+
+        '<span class="tag" style="background:var(--tab-bg);color:var(--text2)">难度：'+esc(x.difficulty||"—")+'</span>'+
+      '</div>'+
+      '<div class="topic-head"><b>'+(i+1)+'. '+esc(x.title||"")+'</b></div>'+
+      '<div class="topic-body">'+
+        tItem("核心洞察",x.insight)+tItem("目标人群",x.audience)+tItem("情绪触发",x.emotionTrigger)+
+        tItem("逻辑复用",x.logicMapping)+tItem("切入角度",x.angle)+
+        (x.hook?'<div class="item"><span class="k">开头钩子</span><span style="flex:1">“'+esc(x.hook)+'”</span></div>':"")+
+        (x.outline&&x.outline.length?'<div class="item"><span class="k">内容大纲</span></div><ol class="topic-outline">'+x.outline.map(o=>'<li>'+esc(o)+'</li>').join("")+'</ol>':"")+
+        tItem("可传播原因",x.whyViral)+
+        (x.titleOptions&&x.titleOptions.length?tItem("备选标题",x.titleOptions.join(" ／ ")):"")+
+      '</div>'+
+      '<div class="topic-foot"><button class="btn ghost small" data-genscript="'+i+'">✍️ 为此选题生成完整脚本</button>'+
+      (isRec&&t.recommendReason?'<span class="gen-status">推荐理由：'+esc(t.recommendReason)+'</span>':"")+'</div>'+
+    '</div>';
+  }).join("");
+  return h;
+}
+const tItem = (k,v) => v ? '<div class="item"><span class="k">'+esc(k)+'</span><span style="flex:1">'+esc(v)+'</span></div>' : "";
+
+function renderScripts(list){
+  return list.map((s,i)=>
+    '<div class="script-block">'+
+    '<div class="seg-head"><span class="tag blue">脚本 '+(i+1)+'</span><b>'+esc(s.title||s._topicTitle||"")+'</b>'+
+    (s.estimatedDuration?'<span class="tag" style="background:var(--tab-bg);color:var(--text2)">'+esc(s.estimatedDuration)+'</span>':"")+'</div>'+
+    (s.titleOptions&&s.titleOptions.length?'<div class="hint" style="margin-bottom:8px">备选标题：'+esc(s.titleOptions.join(" ／ "))+'</div>':"")+
+    (s.hook?'<div class="section-title">开场钩子</div><div class="voiceover">'+esc(s.hook)+'</div>':"")+
+    (s.sections||[]).map(x=>
+      '<div class="section-title">'+esc(x.name||"")+(x.goal?'<span style="color:var(--text2);font-weight:400"> · '+esc(x.goal)+'</span>':"")+'</div>'+
+      '<div class="voiceover">'+esc(x.voiceover||"")+'</div>'+
+      (x.retentionDevice?'<div class="hint">留存设计：'+esc(x.retentionDevice)+'</div>':"")
+    ).join("")+
+    (s.cta?'<div class="section-title">结尾 CTA</div><div class="voiceover">'+esc(s.cta)+'</div>':"")+
+    (s.notes?'<div class="hint" style="margin-top:8px">📌 '+esc(s.notes)+'</div>':"")+
+    '</div>'
+  ).join("");
+}
+function renderGolden(list){
+  return '<div class="grid2">'+list.map(x=>'<div class="mini-card"><div class="quote" style="margin-top:0">“'+esc(x.quote||"")+'”</div><p><b style="font-size:12px">为什么有力：</b>'+esc(x.whyItWorks||"")+'</p><p style="margin-top:4px"><b style="font-size:12px">可套用句式：</b>'+esc(x.howToReuse||"")+'</p></div>').join("")+'</div>';
+}
+
+/* ---------- 导出 ---------- */
+function download(filename, text, mime){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type:mime}));
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+$("exportJson").onclick = () => {
+  if(!state.logic) return;
+  download("文案拆解报告.json", JSON.stringify({source:state.source, logic:state.logic, topics:state.topics, scripts:state.scripts, transcript:state.transcript}, null, 2), "application/json");
+};
+$("exportMd").onclick = () => { if(state.logic) download("文案拆解报告.md", toMarkdown(), "text/markdown"); };
+
+function toMarkdown(){
+  const L = [], d = state.logic, o = d.overview||{};
+  L.push("# " + (o.videoTitle||"YouTube 爆款文案拆解报告"), "", "> " + state.source, "");
+  L.push("## 📊 总览","","| 项目 | 内容 |","|---|---|");
+  [["内容类型",o.contentType],["目标受众",o.targetAudience],["文稿字数",o.wordCount],["核心主题",o.coreTopic],["爆款指数",o.viralScore!=null?o.viralScore+"/100（"+(o.scoreReason||"")+"）":null]]
+    .forEach(([k,v])=>{ if(v!=null) L.push("| "+k+" | "+String(v).replace(/\n/g," ")+" |"); });
+  if(o.summary) L.push("", o.summary);
+  (d.structure||[]).length && L.push("","## 🧩 文案结构拆解","");
+  (d.structure||[]).forEach(s=>{
+    L.push("### "+(s.position||"")+" "+(s.part||""),"");
+    if(s.quote) L.push("> “"+s.quote+"”","");
+    [["叙事功能",s.function],["写作手法",s.technique],["心理机制",s.psychology],["留存设计",s.retention]].forEach(([k,v])=>{ if(v) L.push("- **"+k+"**："+v); });
+    L.push("");
+  });
+  const f = d.viralLogic;
+  if(f){
+    L.push("## 🔥 爆款逻辑","");
+    if(f.formula) L.push("**一句话公式**："+f.formula,"");
+    if(f.hook){ if(f.hook.quote) L.push("> 钩子原文：“"+f.hook.quote+"”",""); L.push("**钩子技巧**："+(f.hook.technique||""),"",f.hook.analysis||"",""); }
+    if(f.narrativeFramework) L.push("**叙事框架**："+f.narrativeFramework,"");
+    (f.emotionCurve||[]).length && L.push("### 情绪曲线","| 阶段 | 情绪 | 触发方式 |","|---|---|---|",...f.emotionCurve.map(e=>"| "+(e.stage||"")+" | "+(e.emotion||"")+" | "+(e.trigger||"")+" |"),"");
+    (f.triggers||[]).forEach(m=>L.push("- **"+(m.name||"")+"**："+(m.explanation||"")+(m.example?"（例：“"+m.example+"”）":"")));
+    if(f.titleLogic) L.push("","**标题逻辑**："+f.titleLogic);
+    (f.transferableRules||[]).length && L.push("","### 可迁移写作规则", ...f.transferableRules.map((r,i)=>(i+1)+". "+r));
+  }
+  const t = state.topics;
+  if(t){
+    L.push("","## 💡 深度选题库","");
+    if(t.topicStrategy) L.push("**选题策略**："+t.topicStrategy,"");
+    (t.topics||[]).forEach((x,i)=>{
+      L.push("### "+(i+1)+". ["+(x.category||"")+"] "+(x.title||""),"");
+      [["核心洞察",x.insight],["目标人群",x.audience],["情绪触发",x.emotionTrigger],["逻辑复用",x.logicMapping],["切入角度",x.angle],["开头钩子",x.hook?"“"+x.hook+"”":null],["可传播原因",x.whyViral],["制作难度",x.difficulty],["备选标题",(x.titleOptions||[]).join(" ／ ")||null]]
+        .forEach(([k,v])=>{ if(v) L.push("- **"+k+"**："+v); });
+      (x.outline||[]).length && L.push("- **内容大纲**：", ...x.outline.map(oo=>"  - "+oo));
+      L.push("");
+    });
+    if(t.recommendReason) L.push("**推荐首发**：第 "+((t.recommendedIndex||0)+1)+" 个 —— "+t.recommendReason);
+  }
+  (state.scripts||[]).forEach((s,i)=>{
+    L.push("","## ✍️ 复刻脚本 "+(i+1)+"："+(s.title||s._topicTitle||""),"");
+    if((s.titleOptions||[]).length) L.push("备选标题："+s.titleOptions.join(" ／ "),"");
+    if(s.estimatedDuration) L.push("预计时长："+s.estimatedDuration,"");
+    if(s.hook) L.push("### 开场钩子","",s.hook,"");
+    (s.sections||[]).forEach(x=>{ L.push("### "+(x.name||"")+(x.goal?"（"+x.goal+"）":""),"",x.voiceover||"",""); if(x.retentionDevice) L.push("> 留存设计："+x.retentionDevice,""); });
+    if(s.cta) L.push("### 结尾 CTA","",s.cta,"");
+    if(s.notes) L.push("> 📌 "+s.notes);
+  });
+  const g = d.goldenLines;
+  if(g && g.length){
+    L.push("","## 💬 金句钩子库","");
+    g.forEach(x=>L.push("- “"+(x.quote||"")+"” —— "+(x.whyItWorks||"")+"（句式："+(x.howToReuse||"")+"）"));
+  }
+  if(state.transcript) L.push("","## 📃 完整文稿","","```",state.transcript,"```");
+  return L.join("\n");
+}
+</script>
+</body>
+</html>
